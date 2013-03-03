@@ -4,13 +4,15 @@ ri browser using ncurses
 
 ## Installation
 
-    $ gem install ribhu
+    gem install ribhu
 
 ## Usage
 
-Ensure you have ri documentation working. On the command line you may do, "ri String". You should get documentation for the String class.
+Ensure you have ri documentation working. On the command line you may do, "ri String". You should get documentation for the String class. If not proceed as follows:
 
-To get ri documentation, you would do "rvm docs generate-ri".
+To get ri documentation, you would do 
+
+     rvm docs generate-ri
 
 ## Contributing
 
