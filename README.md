@@ -1,24 +1,16 @@
 # Ribhu
 
-TODO: Write a gem description
+ri browser using ncurses
 
 ## Installation
-
-Add this line to your application's Gemfile:
-
-    gem 'ribhu'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
 
     $ gem install ribhu
 
 ## Usage
 
-TODO: Write usage instructions here
+Ensure you have ri documentation working. On the command line you may do, "ri String". You should get documentation for the String class.
+
+To get ri documentation, you would do "rvm docs generate-ri".
 
 ## Contributing
 
