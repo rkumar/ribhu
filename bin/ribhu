@@ -1,0 +1,282 @@
+#!/usr/bin/env ruby
+
+#require 'ribhu'
+# NOTE: If the listbox is empty, that could mean that you have not generated
+#  ri documentation for this version of ruby. You can do so by doing:
+#    rvm docs generate-ri 
+#    or 
+#    rvm docs generate
+#  (This assumes you are using rvm)
+#
+# WARNING : IF THIS PROGRAM HANGS check the ri command 
+# Maybe your version of ri has different options and is going interactive.
+# ruby 1.9.3's ri requires a -l option or else if becomes interactive.
+# this program tests out a listbox
+# This is written in the old style where we start and end ncurses and initiate a 
+# getch loop. It gives more control.
+# The new style is to use App which does the ncurses setup and teardown, as well
+# as manages keys. It also takes care of logger and includes major stuff.
+#
+#
+#  TODO: space does nothing in left, should either be same as enter or page.
+#  TODO: Bookmark some classes and allow user to change
+#  TODO: what about other docs such as rbcurse, highline and others
+require 'logger'
+require 'rbcurse'
+require 'rbcurse/core/widgets/rlist'
+require 'rbcurse/core/widgets/rtextview'
+require 'rbcurse/core/include/vieditable'
+
+class RubyCurses::List
+  # vieditable includes listeditable which
+  # does bring in some functions which can crash program like x and X TODO
+  # also, f overrides list f mapping. TODO
+  include ViEditable
+end
+def my_help_text
+    <<-eos
+
+    =========================================================================
+    Basic Usage
+
+    Press <ENTER> on a class name on the first list, to view ri information
+    for it on the right.
+    
+    Tab to right area, and press <ENTER> on a method name, to see its details
+    Press / <slash> in any box to search. e.g /String will take you to the
+    first occurrence of String. <n> will take you to next.
+    
+    To go quickly to first class starting with 'S', type <f> followed by <S>.
+    Then press <n> to go to next match.
+
+    On the right window, you may press BACKSPACE to go back to earlier pages.
+    You may also press Alt-n and Alt-p to cycle through next and previously
+    viewed pages.
+
+    Press Alt-C to enter class or method name and see details. If there is 
+    no data returned, or options returned you may have to select from a list.
+    e.g. entering 'flatten' may return a list of choices to select from.
+    Entering 'Str' returns nothing from ri, so you have to select from classes
+    starting with 'Str'.
+
+    =========================================================================
+    Bookmarks
+
+    Access bookmarks using single-quote as in vim followed by a single character. 
+    Some have been set such as Array, String, Hash, File. To create a bookmark,
+    position cursor over a class in the left list, and press "m". You will be 
+    prompted for the character to use as the mark.
+    
+    =========================================================================
+    Buffers
+
+    Ordinary a textview contains only one buffer. However, the one on the right
+    is extended for multiple buffers. Pressing ENTER on the left on several 
+    rows opens multiple buffers on the right. Use M-n (Alt-N) and M-p to navigate.
+    ALternatively, : maps to a menu, so :n and :p may also be used.
+    <BACKSPACE> will also go to previous buffer, like a browser.
+
+    =========================================================================
+           Press <M-n> for next help screen, or try :n 
+
+    eos
+end
+def display_text word
+  w = @form.by_name["tv"]; 
+  lines = `ri -f bs #{word}`.split("\n")
+  return if lines.nil? || lines.size == 0
+  w.add_content(lines, :content_type => :ansi, :title => word)
+  w.buffer_last
+end
+
+def ask_classes
+  str = get_string("Enter a class name: ")
+  if str != ""
+    lines = `ri -f bs #{str}`.split("\n")
+    if lines.size == 0
+      #alert "Nothing came through for #{str}"
+      ## Nothing returned, lets see if we can match something from the class list
+      li = @form.by_name["mylist"]; 
+      values = li.list
+      values = values.grep(/^#{str}/i)
+      if values.size > 0
+        ix = popuplist(values)
+        if ix
+          str = values[ix]
+          lines = `ri -f bs #{str}`.split("\n")
+        end
+      else
+        alert "Nothing came through for #{str}"
+      end
+    elsif lines.first.index(".#{str} not found")
+      ## we are returned something with some choices, lets prompt user with choices
+      lines.shift
+      lines.shift
+        ix = popuplist(lines)
+        if ix
+          str = lines[ix]
+          lines = `ri -f bs #{str}`.split("\n")
+        end
+    end
+    return if lines.size == 0
+    w = @form.by_name["tv"]; 
+    w.add_content(lines, :content_type => :ansi, :title => str)
+    w.buffer_last
+  end
+end
+def ask_bookmark
+  ch = @window.getchar
+  # double single quote is mapped, but this may get us into an endless loop
+  #if ch.chr == "'"
+    #@window.ungetch(ch)
+    #return
+  #end
+  ch = ch.chr.upcase
+  str = $bookmarks[ch.to_sym]
+  if str
+    display_text str
+  else
+    #alert "No bookmark for #{ch}"
+    ## No bookmark, jumping to first char 
+    listb = @form.by_name["mylist"]; 
+    listb.set_selection_for_char ch
+  end
+end
+def add_bookmark ch, word
+  $bookmarks[ch.upcase.to_sym] = word
+  alert "set mark for #{ch.upcase.to_sym} for #{word}"
+end
+if $0 == __FILE__
+  include RubyCurses
+
+  begin
+  # Initialize curses
+    VER::start_ncurses  # this is initializing colors via ColorMap.setup
+    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
+    $log.level = Logger::DEBUG
+
+    $bookmarks = {
+      :A => "Array",
+      :C => "Class",
+      :D => "Dir",
+      :F => "File",
+      :H => "Hash",
+      :I => "IO",
+      :K => "Kernel",
+      :S => "String"
+    }
+
+
+    @window = VER::Window.root_window
+    $catch_alt_digits = true; # emacs like alt-1..9 numeric arguments
+    install_help_text my_help_text
+    # Initialize few color pairs 
+    # Create the window to be associated with the form 
+    # Un post form and free the memory
+
+    catch(:close) do
+      @form = Form.new @window
+      @form.bind_key(KEY_F1, 'help'){ display_app_help }
+      @form.bind_key(?\M-c, 'select class') do
+        ask_classes
+      end
+      @form.bind_key(?', 'select bookmark') do
+        ask_bookmark
+      end
+
+      # this is the old style of printing something directly on the window.
+      # The new style is to use a header
+      @form.window.printstring 0, 30, "ri documentation browser", $normalcolor, BOLD
+      r = 1; fc = 1;
+
+      # this is the old style of using a label at the screen bottom, you can use the status_line
+      
+      v = "F10 quits. F1 Help.  Try j k gg G o O C dd f<char> w yy p P / . Press ENTER on Class or Method"
+      var = RubyCurses::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2, 
+        "col" => fc, "display_length" => 100}
+
+      h = FFI::NCurses.LINES-3
+      mylist = `ri -l `.split("\n")
+      w = 25
+      
+      listb = List.new @form, :name   => "mylist" ,
+        :row  => r ,
+        :col  => 1 ,
+        :width => w,
+        :height => h,
+        :list => mylist,
+        :selection_mode => :SINGLE,
+        :show_selector => true,
+        #row_selected_symbol "[X] "
+        #row_unselected_symbol "[ ] "
+        :title => " Ruby Classes "
+        #title_attrib 'reverse'
+      listb.one_key_selection = false # this allows us to map keys to methods
+      listb.vieditable_init_listbox
+      include Io
+      listb.bind_key(?r, 'get file'){ get_file("Get a file:") }
+      listb.bind_key(32) {|l| l.scroll_forward };
+      listb.bind(:PRESS) { 
+        display_text listb.text
+        ## select class and display riinfo for class
+      }
+      listb.bind_key(?m) { 
+        str = listb.text
+        ch = get_string("Enter character as shortcut for #{str}")
+        if ch != ""
+          add_bookmark ch[0], str
+        end
+        ## select class and display riinfo for class
+      }
+      #listb.unbind_key([?', ?'])
+      #listb.unbind_key(["'","'"])
+      #listb.unbind_key("'")
+      listb.bind_key(?', 'select bookmark') do
+        ask_bookmark
+      end
+
+      tv = RubyCurses::TextView.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
+      :name => "tv", :title => "Press Enter on method"
+      tv.set_content ["Press Enter on list to view ri information in this area.", 
+        "Press ENTER on method name to see details"]
+      require 'rbcurse/core/include/multibuffer'
+      tv.extend(RubyCurses::MultiBuffers)
+      #tv.unbind_key([?', ?'])
+      #tv.unbind_key(?')
+      tv.bind_key(?', 'select bookmark') do
+        ask_bookmark
+      end
+
+      # pressing ENTER on a method name will popup details for that method
+      tv.bind(:PRESS) { |ev|
+        w = ev.word_under_cursor.strip
+        # check that user did not hit enter on empty area
+        if w != ""
+          _text = `ri -f bs #{tv.title}.#{w} 2>&1` 
+          _text = _text.split("\n")
+          if _text && _text.size != 0
+            view(_text, :content_type => :ansi)
+          end
+        end
+      }
+
+
+    @form.repaint
+    @window.wrefresh
+    Ncurses::Panel.update_panels
+    while((ch = @window.getchar()) != KEY_F10 )
+      break if ch == ?Q.ord
+      @form.handle_key(ch)
+      @window.wrefresh
+    end
+  end
+rescue => ex
+  $log.debug( ex) if ex
+  $log.debug(ex.backtrace.join("\n")) if ex
+ensure
+  @window.destroy if !@window.nil?
+  VER::stop_ncurses
+  p ex if ex
+  p(ex.backtrace.join("\n")) if ex
+end
+end
