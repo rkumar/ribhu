@@ -18,9 +18,10 @@
 # as manages keys. It also takes care of logger and includes major stuff.
 #
 #
-#  TODO: space does nothing in left, should either be same as enter or page.
-#  TODO: Bookmark some classes and allow user to change
 #  TODO: what about other docs such as rbcurse, highline and others
+#  If search fails try ::str
+#  Also when ENTER if class has a :: then try adding it straight to that module RubyCurses::Button
+#   and not RubyC::Link.Button -- keep trying options till we get something
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/core/widgets/rlist'
@@ -83,16 +84,19 @@ def my_help_text
 end
 def display_text word
   w = @form.by_name["tv"]; 
-  lines = `ri -f bs #{word}`.split("\n")
+  lines = `ri -f rdoc #{word}`.split("\n")
   return if lines.nil? || lines.size == 0
-  w.add_content(lines, :content_type => :ansi, :title => word)
+  # ansi can have overflow
+  #w.add_content(lines, :content_type => :ansi, :title => word)
+  w.add_content(lines, :title => word)
   w.buffer_last
 end
 
 def ask_classes
+  format="rdoc"
   str = get_string("Enter a class name: ")
   if str != ""
-    lines = `ri -f bs #{str}`.split("\n")
+    lines = `ri -f #{format} #{str}`.split("\n")
     if lines.size == 0
       #alert "Nothing came through for #{str}"
       ## Nothing returned, lets see if we can match something from the class list
@@ -103,7 +107,7 @@ def ask_classes
         ix = popuplist(values)
         if ix
           str = values[ix]
-          lines = `ri -f bs #{str}`.split("\n")
+          lines = `ri -f #{format} #{str}`.split("\n")
         end
       else
         alert "Nothing came through for #{str}"
@@ -115,13 +119,22 @@ def ask_classes
         ix = popuplist(lines)
         if ix
           str = lines[ix]
-          lines = `ri -f bs #{str}`.split("\n")
+          lines = `ri -f #{format} #{str}`.split("\n")
         end
     end
     return if lines.size == 0
     w = @form.by_name["tv"]; 
-    w.add_content(lines, :content_type => :ansi, :title => str)
+    #w.add_content(lines, :content_type => :ansi, :title => str)
+    w.add_content(lines, :title => str)
     w.buffer_last
+  end
+end
+# set focus in list on given string
+def set_focus_on str
+  listb = @form.by_name["mylist"]; 
+  ix = listb.list.index(str)
+  if ix
+    listb.set_focus_on ix
   end
 end
 def ask_bookmark
@@ -135,6 +148,8 @@ def ask_bookmark
   str = $bookmarks[ch.to_sym]
   if str
     display_text str
+    # set focus to that in the left list
+    set_focus_on str
   else
     #alert "No bookmark for #{ch}"
     ## No bookmark, jumping to first char 
@@ -163,6 +178,8 @@ if $0 == __FILE__
       :H => "Hash",
       :I => "IO",
       :K => "Kernel",
+      :R => "RubyCurses",
+      :L => "RubyCurses::Link",
       :S => "String"
     }
 
@@ -191,7 +208,7 @@ if $0 == __FILE__
 
       # this is the old style of using a label at the screen bottom, you can use the status_line
       
-      v = "F10 quits. F1 Help.  Try j k gg G o O C dd f<char> w yy p P / . Press ENTER on Class or Method"
+      v = "F10 quit, F1 Help, ? Bindings,  f<char>, /,  Alt-c, ENTER on Class or Method"
       var = RubyCurses::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2, 
         "col" => fc, "display_length" => 100}
 
@@ -214,7 +231,6 @@ if $0 == __FILE__
       listb.one_key_selection = false # this allows us to map keys to methods
       listb.vieditable_init_listbox
       include Io
-      listb.bind_key(?r, 'get file'){ get_file("Get a file:") }
       listb.bind_key(32) {|l| l.scroll_forward };
       listb.bind(:PRESS) { 
         display_text listb.text
@@ -252,10 +268,26 @@ if $0 == __FILE__
         w = ev.word_under_cursor.strip
         # check that user did not hit enter on empty area
         if w != ""
-          _text = `ri -f bs #{tv.title}.#{w} 2>&1` 
+          #alert "wuc:#{w}:cp=#{ev.curpos},"
+          if w.index("::")
+            str=w
+          else
+            str = "#{tv.title}.#{w}"
+          end
+          tt = tv.title
+          _text = `ri -f rdoc #{str} 2>&1` 
           _text = _text.split("\n")
+          if _text.first.index("Nothing known about")
+            $log.debug "XXXX got #{_text}"
+            if tt.index("::")
+              ix = tt.index("::")
+              tt = tt[0,ix]
+              _text = `ri -f rdoc #{tt}::#{w} 2>&1`.split("\n")
+            end
+          end
           if _text && _text.size != 0
-            view(_text, :content_type => :ansi)
+            #view(_text, :content_type => :ansi)
+            view(_text)
           end
         end
       }
