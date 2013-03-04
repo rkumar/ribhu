@@ -178,7 +178,7 @@ if $0 == __FILE__
   include RubyCurses
 
   begin
-  # Initialize curses
+    # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
     $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
     $log.level = Logger::DEBUG
@@ -220,7 +220,7 @@ if $0 == __FILE__
       r = 1; fc = 1;
 
       # this is the old style of using a label at the screen bottom, you can use the status_line
-      
+
       v = "F10 quit, F1 Help, ? Bindings,  f<char>, /,  Alt-c, ENTER on Class or Method"
       var = RubyCurses::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2, 
         "col" => fc, "display_length" => 100}
@@ -228,7 +228,7 @@ if $0 == __FILE__
       h = FFI::NCurses.LINES-3
       mylist = `ri -l `.split("\n")
       w = 25
-      
+
       listb = List.new @form, :name   => "mylist" ,
         :row  => r ,
         :col  => 1 ,
@@ -240,7 +240,7 @@ if $0 == __FILE__
         #row_selected_symbol "[X] "
         #row_unselected_symbol "[ ] "
         :title => " Ruby Classes "
-        #title_attrib 'reverse'
+      #title_attrib 'reverse'
       listb.one_key_selection = false # this allows us to map keys to methods
       #listb.vieditable_init_listbox
       # what for is Io here
@@ -266,7 +266,7 @@ if $0 == __FILE__
       end
 
       tv = RubyCurses::TextView.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
-      :name => "tv", :title => "Press Enter on method"
+        :name => "tv", :title => "Press Enter on method"
       tv.set_content ["Press Enter on list to view ri information in this area.", 
         "Press ENTER on method name to see details"]
       require 'rbcurse/core/include/multibuffer'
@@ -284,10 +284,10 @@ if $0 == __FILE__
         if w != ""
           #alert "wuc:#{w}:cp=#{ev.curpos},"
           #if w.index("::")
-            #str=w
+          #str=w
           #else
-            str = "#{tv.title}.#{w}"
-            _text = try_ri([w, "#{str}"])
+          str = "#{tv.title}.#{w}"
+          _text = try_ri([w, "#{str}"])
           #end
           tt = tv.title
           #_text = `ri -f rdoc #{str} 2>&1` 
@@ -308,23 +308,25 @@ if $0 == __FILE__
       }
 
 
-    @form.repaint
-    @window.wrefresh
-    Ncurses::Panel.update_panels
-    while((ch = @window.getchar()) != KEY_F10 )
-      break if ch == ?Q.ord
-      @form.handle_key(ch)
+      @form.repaint
       @window.wrefresh
+      Ncurses::Panel.update_panels
+      while((ch = @window.getchar()) != KEY_F10 )
+        break if ch == ?Q.ord
+        @form.handle_key(ch)
+        @window.wrefresh
+      end
     end
+  rescue => ex
+    textdialog ["Error in ribhu: #{ex} ", *ex.backtrace], :title => "Exception"
+    $log.debug( ex) if ex
+    $log.debug(ex.backtrace.join("\n")) if ex
+  ensure
+    @window.destroy if !@window.nil?
+    VER::stop_ncurses
+    p ex if ex
+    p(ex.backtrace.join("\n")) if ex
   end
-rescue => ex
-  textdialog ["Error in ribhu: #{ex} ", *ex.backtrace], :title => "Exception"
-  $log.debug( ex) if ex
-  $log.debug(ex.backtrace.join("\n")) if ex
-ensure
-  @window.destroy if !@window.nil?
-  VER::stop_ncurses
-  p ex if ex
-  p(ex.backtrace.join("\n")) if ex
-end
+  else
+    puts "Error #{$0}"
 end
