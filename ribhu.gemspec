@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Ribhu::VERSION
   spec.authors       = ["Rahul Kumar"]
   spec.email         = ["sentinel1879@gmail.com"]
-  spec.description   = %q{ri browser using ncurses}
-  spec.summary       = %q{ri browser using ncurses}
+  spec.description   = %q{ri documentation browser using ncurses}
+  spec.summary       = %q{ri documentation browser using ncurses}
   spec.homepage      = "https://github.com/rkumar/ribhu"
   spec.license       = "MIT"
 
