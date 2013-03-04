@@ -81,6 +81,9 @@ def my_help_text
 
     eos
 end
+
+##
+#  display the ridoc for given word (class or method or part)
 def display_text word
   w = @form.by_name["tv"]; 
   lines = `ri -f rdoc #{word}`.split("\n")
@@ -91,6 +94,9 @@ def display_text word
   w.buffer_last
 end
 
+## 
+# prompt user for a class name and show ri doc for same, can be method too
+#
 def ask_classes
   format="rdoc"
   str = get_string("Enter a class name: ")
@@ -128,6 +134,7 @@ def ask_classes
     w.buffer_last
   end
 end
+
 # set focus in list on given string
 def set_focus_on str
   listb = @form.by_name["mylist"]; 
@@ -136,13 +143,10 @@ def set_focus_on str
     listb.set_focus_on ix
   end
 end
+
+## user has pressed bokmark char, now get the mark A-Z
 def ask_bookmark
   ch = @window.getchar
-  # double single quote is mapped, but this may get us into an endless loop
-  #if ch.chr == "'"
-    #@window.ungetch(ch)
-    #return
-  #end
   ch = ch.chr.upcase
   str = $bookmarks[ch.to_sym]
   if str
@@ -160,6 +164,9 @@ def add_bookmark ch, word
   $bookmarks[ch.upcase.to_sym] = word
   alert "set mark for #{ch.upcase.to_sym} for #{word}"
 end
+
+## try various options till you get something.
+#
 def try_ri arr
   _text = nil
   arr.each do |w|
@@ -221,9 +228,9 @@ if true
 
       # this is the old style of using a label at the screen bottom, you can use the status_line
 
-      v = "F10 quit, F1 Help, ? Bindings,  f<char>, /,  Alt-c, ENTER on Class or Method"
-      var = RubyCurses::Label.new @form, {'text' => v, "row" => FFI::NCurses.LINES-2, 
-        "col" => fc, "display_length" => 100}
+      v = "Q quit, F1 Help, ? Bindings,  f<char>, /,  Alt-c, ENTER on Class or Method"
+      var = RubyCurses::Label.new @form, { :text => v, :row => FFI::NCurses.LINES-2, 
+        :col => fc, :display_length => 100}
 
       h = FFI::NCurses.LINES-3
       mylist = `ri -l `.split("\n")
@@ -237,8 +244,6 @@ if true
         :list => mylist,
         :selection_mode => :SINGLE,
         :show_selector => true,
-        #row_selected_symbol "[X] "
-        #row_unselected_symbol "[ ] "
         :title => " Ruby Classes "
       #title_attrib 'reverse'
       listb.one_key_selection = false # this allows us to map keys to methods
@@ -318,7 +323,7 @@ if true
       end
     end
   rescue => ex
-    textdialog ["Error in ribhu: #{ex} ", *ex.backtrace], :title => "Exception"
+    textdialog ["Error in rib: #{ex} ", *ex.backtrace], :title => "Exception"
     $log.debug( ex) if ex
     $log.debug(ex.backtrace.join("\n")) if ex
   ensure
