@@ -45,6 +45,8 @@ This gem depends on rbcurse-core
 
    rib was taken, so i took the next name that came to mind. "ri" browser.
 
+   https://rubygems.org/gems/ribhu
+
 ## Contributing
 
 1. Fork it
