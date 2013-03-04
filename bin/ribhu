@@ -161,6 +161,19 @@ def add_bookmark ch, word
   $bookmarks[ch.upcase.to_sym] = word
   alert "set mark for #{ch.upcase.to_sym} for #{word}"
 end
+def try_ri arr
+  _text = nil
+  arr.each do |w|
+    _text = `ri -f rdoc #{w} 2>&1`.split("\n")
+    if _text.first.index("Nothing known about")
+    else
+      break
+    end
+  end
+  _text
+end
+
+
 if $0 == __FILE__
   include RubyCurses
 
@@ -229,7 +242,8 @@ if $0 == __FILE__
         :title => " Ruby Classes "
         #title_attrib 'reverse'
       listb.one_key_selection = false # this allows us to map keys to methods
-      listb.vieditable_init_listbox
+      #listb.vieditable_init_listbox
+      # what for is Io here
       include Io
       listb.bind_key(32) {|l| l.scroll_forward };
       listb.bind(:PRESS) { 
@@ -269,14 +283,15 @@ if $0 == __FILE__
         # check that user did not hit enter on empty area
         if w != ""
           #alert "wuc:#{w}:cp=#{ev.curpos},"
-          if w.index("::")
-            str=w
-          else
+          #if w.index("::")
+            #str=w
+          #else
             str = "#{tv.title}.#{w}"
-          end
+            _text = try_ri([w, "#{str}"])
+          #end
           tt = tv.title
-          _text = `ri -f rdoc #{str} 2>&1` 
-          _text = _text.split("\n")
+          #_text = `ri -f rdoc #{str} 2>&1` 
+          #_text = _text.split("\n")
           if _text.first.index("Nothing known about")
             $log.debug "XXXX got #{_text}"
             if tt.index("::")
@@ -303,6 +318,7 @@ if $0 == __FILE__
     end
   end
 rescue => ex
+  textdialog ["Error in ribhu: #{ex} ", *ex.backtrace], :title => "Exception"
   $log.debug( ex) if ex
   $log.debug(ex.backtrace.join("\n")) if ex
 ensure
