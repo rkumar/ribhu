@@ -32,6 +32,8 @@ To get ri documentation, you would do
 
 If you use any gems for development, e.g. highline or rbcurse-core, use the `--ri` flag while installing the gem (this assumes you've switched off ri and rdocs in your .gemrc).
 
+This gem depends on rbcurse-core
+
 ## Gem name
 
    rib was taken, so i took the next name that came to mind. "ri" browser.
