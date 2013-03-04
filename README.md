@@ -8,7 +8,14 @@ You may press Enter on a class to see its documention. Pressing ENTER over a met
 fetch its details.
 
 You may mark classes with an upper case alphabet (vim style) and access them directly using single-quote.
-Several classes have been bookmarked such as Array, String, Hash, File.
+Several classes have been bookmarked such as Array, String, Hash, File. You may place more in a file named "~/.ribhu.conf" in the form:
+
+    $bookmark[:Z] = "Zlib"
+
+A list of visited classes is also maintained and can be accessed and selected from. You may prepopulate it
+from the conf file as:
+
+    $visited.concat %w{Abbrev GC ARGF}
 
 Pressing Alt-c and type in any class or method or portion. If `ri` does not return data or returns
 choices, a popup will allows selection of choices.
