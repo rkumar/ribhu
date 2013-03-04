@@ -117,6 +117,7 @@ def ask_classes
         end
       else
         alert "Nothing came through for #{str}"
+        $message.value = "Nothing came through for #{str}"
       end
     elsif lines.first.index(".#{str} not found")
       ## we are returned something with some choices, lets prompt user with choices
@@ -133,6 +134,7 @@ def ask_classes
     #w.add_content(lines, :content_type => :ansi, :title => str)
     w.add_content(lines, :title => str)
     w.buffer_last
+    set_focus_on str
   end
 end
 
@@ -155,7 +157,7 @@ def ask_bookmark
     # set focus to that in the left list
     set_focus_on str
   else
-    #alert "No bookmark for #{ch}"
+    $message.value = "No bookmark for #{ch}"
     ## No bookmark, jumping to first char 
     listb = @form.by_name["mylist"]; 
     listb.set_selection_for_char ch
@@ -245,8 +247,14 @@ if true
       # this is the old style of using a label at the screen bottom, you can use the status_line
 
       v = "Q quit, F1 Help, ? Bindings,  f<char>, /,  Alt-c, ENTER on Class or Method"
-      var = RubyCurses::Label.new @form, { :text => v, :row => FFI::NCurses.LINES-2, 
-        :col => fc, :display_length => 100}
+      #var = RubyCurses::Label.new @form, { :text => v, :row => FFI::NCurses.LINES-2, 
+        #:col => fc, :display_length => 100}
+      $message = Variable.new
+      $message.value = "Message Comes Here"
+      @status_line = status_line :row => Ncurses.LINES-2
+      @status_line.command {
+        "F1 Help | Q Quit | ? Keys | M-c Classes | M-d History | %20s" % [$message.value]
+      }
 
       h = FFI::NCurses.LINES-3
       mylist = `ri -l `.split("\n")
