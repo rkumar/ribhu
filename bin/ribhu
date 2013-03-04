@@ -90,6 +90,7 @@ def display_text word
   return if lines.nil? || lines.size == 0
   # ansi can have overflow
   #w.add_content(lines, :content_type => :ansi, :title => word)
+  $visited << word unless $visited.index(word)
   w.add_content(lines, :title => word)
   w.buffer_last
 end
@@ -178,6 +179,13 @@ def try_ri arr
   end
   _text
 end
+def ask_history
+  return if $visited.size == 0
+  ix = popuplist($visited, :title => " -- History -- ", :bgcolor => :blue, :color => :white)
+  if ix
+    display_text $visited[ix]
+  end
+end
 
 
 #if $0 == __FILE__
@@ -187,9 +195,11 @@ if true
   begin
     # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    $log = Logger.new((File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")))
+    logfilename = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
+    $log = Logger.new(logfilename)
     $log.level = Logger::DEBUG
 
+    $visited = []
     $bookmarks = {
       :A => "Array",
       :C => "Class",
@@ -198,10 +208,13 @@ if true
       :H => "Hash",
       :I => "IO",
       :K => "Kernel",
-      :R => "RubyCurses",
-      :L => "RubyCurses::Link",
       :S => "String"
     }
+    config = File.expand_path("~/.ribhu.conf")
+    # read up any bookmarks or visited classes, they get added to the existing data
+    if File.exists? config
+      load config
+    end
 
 
     @window = VER::Window.root_window
@@ -219,6 +232,9 @@ if true
       end
       @form.bind_key(?', 'select bookmark') do
         ask_bookmark
+      end
+      @form.bind_key(?\M-d, 'View history') do
+        ask_history
       end
 
       # this is the old style of printing something directly on the window.
@@ -317,7 +333,7 @@ if true
       @window.wrefresh
       Ncurses::Panel.update_panels
       while((ch = @window.getchar()) != KEY_F10 )
-        break if ch == ?Q.ord
+        break if ch == ?Q.ord || ch == ?\C-q.getbyte(0)
         @form.handle_key(ch)
         @window.wrefresh
       end
