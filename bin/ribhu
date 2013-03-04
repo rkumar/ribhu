@@ -59,6 +59,11 @@ def my_help_text
     Entering 'Str' returns nothing from ri, so you have to select from classes
     starting with 'Str'.
 
+    Press Alt-D to get a popup of visited classes, from which you may select.
+
+    '?' displays all key binding for current object. 'Q' and 'C-q' quit.
+    In any popups, try 'C-q' to quit.
+
     =========================================================================
     Bookmarks
 
@@ -157,7 +162,7 @@ def ask_bookmark
     # set focus to that in the left list
     set_focus_on str
   else
-    $message.value = "No bookmark for #{ch}"
+    $message.value = "No bookmark for #{ch}. Use m to create."
     ## No bookmark, jumping to first char 
     listb = @form.by_name["mylist"]; 
     listb.set_selection_for_char ch
@@ -181,9 +186,9 @@ def try_ri arr
   end
   _text
 end
-def ask_history
+def popup_history
   return if $visited.size == 0
-  ix = popuplist($visited, :title => " -- History -- ", :bgcolor => :blue, :color => :white)
+  ix = popuplist($visited, :title => " History ", :bgcolor => :blue, :color => :white)
   if ix
     display_text $visited[ix]
   end
@@ -236,12 +241,13 @@ if true
         ask_bookmark
       end
       @form.bind_key(?\M-d, 'View history') do
-        ask_history
+        popup_history
       end
 
+      header = app_header "0.0.2", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
       # this is the old style of printing something directly on the window.
       # The new style is to use a header
-      @form.window.printstring 0, 30, "ri documentation browser", $normalcolor, BOLD
+      #@form.window.printstring 0, 30, "ri documentation browser", $normalcolor, BOLD
       r = 1; fc = 1;
 
       # this is the old style of using a label at the screen bottom, you can use the status_line
@@ -251,12 +257,12 @@ if true
         #:col => fc, :display_length => 100}
       $message = Variable.new
       $message.value = "Message Comes Here"
-      @status_line = status_line :row => Ncurses.LINES-2
+      @status_line = status_line :row => Ncurses.LINES-1
       @status_line.command {
         "F1 Help | Q Quit | ? Keys | M-c Classes | M-d History | %20s" % [$message.value]
       }
 
-      h = FFI::NCurses.LINES-3
+      h = FFI::NCurses.LINES-2
       mylist = `ri -l `.split("\n")
       w = 25
 
