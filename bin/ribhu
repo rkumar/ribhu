@@ -328,5 +328,5 @@ if $0 == __FILE__
     p(ex.backtrace.join("\n")) if ex
   end
   else
-    puts "Error #{$0}"
+    puts "Error #{$0}, #{__FILE__}"
 end
