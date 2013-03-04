@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-#require 'ribhu'
 # NOTE: If the listbox is empty, that could mean that you have not generated
 #  ri documentation for this version of ruby. You can do so by doing:
 #    rvm docs generate-ri 
@@ -174,7 +173,8 @@ def try_ri arr
 end
 
 
-if $0 == __FILE__
+#if $0 == __FILE__
+if true
   include RubyCurses
 
   begin
