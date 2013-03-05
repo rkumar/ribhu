@@ -16,3 +16,7 @@ tmp
 .yardoc
 _yardoc
 doc/
+Gemfile.lock
+lib/
+rbc13.log
+todo
