@@ -106,7 +106,7 @@ end
 def ask_classes
   format="rdoc"
   str = get_string_with_history("Enter a class name: ")
-  if str != ""
+  if str && str != ""
     lines = `ri -f #{format} #{str}`.split("\n")
     if lines.size == 0
       alert "Nothing came through for #{str}"
@@ -301,7 +301,7 @@ if true
       listb.bind_key(?m) { 
         str = listb.text
         ch = get_string("Enter character as shortcut for #{str}")
-        if ch != ""
+        if ch && ch != ""
           add_bookmark ch[0], str
         end
         ## select class and display riinfo for class
@@ -362,8 +362,10 @@ if true
           alert "No instance methods found"
         end
         if ix
-          values = lines[ix..-1]
-          ix = popuplist(values)
+          values = lines[ix+2..-1]
+          values = values.collect { |x| x.strip }
+          #ix = popuplist(values)
+          ix = popuplist(values, :title => " Methods ", :bgcolor => :blue, :color => :white)
           if ix
             meth = values[ix].strip
             display_text "#{kl}.#{meth}"
