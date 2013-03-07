@@ -20,6 +20,8 @@ from the conf file as:
 Pressing Alt-c and type in any class or method or portion. If `ri` does not return data or returns
 choices, a popup will allows selection of choices.
 
+Search through the current window using "/". You may use "Alt-h" to access history (previous searches).
+
 Browser style, one may backspace through earlier results, or use Alt-n and Alt-p  to go back and forth
 between previous and next pages viewed.
 
