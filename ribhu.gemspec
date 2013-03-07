@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'ribhu/version'
+#require 'ribhu/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "ribhu"
-  spec.version       = Ribhu::VERSION
+  spec.version       = "0.0.2"
   spec.authors       = ["Rahul Kumar"]
   spec.email         = ["sentinel1879@gmail.com"]
   spec.description   = %q{ri documentation browser using ncurses}
