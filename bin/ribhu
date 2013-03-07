@@ -105,11 +105,11 @@ end
 #
 def ask_classes
   format="rdoc"
-  str = get_string("Enter a class name: ")
+  str = get_string_with_history("Enter a class name: ")
   if str != ""
     lines = `ri -f #{format} #{str}`.split("\n")
     if lines.size == 0
-      #alert "Nothing came through for #{str}"
+      alert "Nothing came through for #{str}"
       ## Nothing returned, lets see if we can match something from the class list
       li = @form.by_name["mylist"]; 
       values = li.list
@@ -193,6 +193,19 @@ def popup_history
     display_text $visited[ix]
   end
 end
+def get_string_with_history prompt
+  $shell_history ||= []
+  cmd = get_string(prompt, :maxlen => 50) do |f|
+    require 'rbcurse/core/include/rhistory'
+    f.extend(FieldHistory)
+    f.history($shell_history)
+  end
+  if cmd && !cmd.empty?
+    $shell_history.push(cmd) unless $shell_history.include? cmd
+  end
+  return cmd
+end
+
 
 
 #if $0 == __FILE__
@@ -322,7 +335,7 @@ if true
           #str=w
           #else
           str = "#{tv.title}.#{w}"
-          _text = try_ri([w, "#{str}"])
+          _text = try_ri(["#{str}", w])
           #end
           tt = tv.title
           #_text = `ri -f rdoc #{str} 2>&1` 
@@ -340,6 +353,18 @@ if true
             view(_text)
           end
         end
+      }
+      tv.bind_key(?\M-m, "Select methods") {
+        alert "comes into M-m"
+        kl = tv.title
+        lines = tv.text
+        ix = lines.index("= Instance methods:")
+        alert "found instance #{ix}"
+        return unless ix
+        values = lines[ix..-1]
+        ix = popuplist(values)
+        return unless ix
+        display_text "#{kl}.#{values[ix]}"
       }
 
 
