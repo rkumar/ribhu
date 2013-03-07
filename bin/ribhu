@@ -355,16 +355,20 @@ if true
         end
       }
       tv.bind_key(?\M-m, "Select methods") {
-        alert "comes into M-m"
-        kl = tv.title
+        kl = tv.title.strip
         lines = tv.text
         ix = lines.index("= Instance methods:")
-        alert "found instance #{ix}"
-        return unless ix
-        values = lines[ix..-1]
-        ix = popuplist(values)
-        return unless ix
-        display_text "#{kl}.#{values[ix]}"
+        unless ix
+          alert "No instance methods found"
+        end
+        if ix
+          values = lines[ix..-1]
+          ix = popuplist(values)
+          if ix
+            meth = values[ix].strip
+            display_text "#{kl}.#{meth}"
+          end
+        end
       }
 
 
