@@ -7,7 +7,7 @@ Classes on the left list, and details on the right.
 You may press Enter on a class to see its documention. Pressing ENTER over a method in the right will
 fetch its details.
 
-You may mark classes with an upper case alphabet (vim style) and access them directly using single-quote.
+You may mark classes with an upper case alphabet (vim style by pressing 'm' in the left list) and access them directly using single-quote.
 Several classes have been bookmarked such as Array, String, Hash, File. You may place more in a file named "~/.ribhu.conf" in the form:
 
     $bookmark[:Z] = "Zlib"
@@ -17,8 +17,10 @@ from the conf file as:
 
     $visited.concat %w{Abbrev GC ARGF}
 
-Pressing Alt-c and type in any class or method or portion. If `ri` does not return data or returns
-choices, a popup will allows selection of choices.
+Pressing Alt-c ('ask-class') and type in any class or method or portion. If `ri` does not return data or returns
+choices, a popup will allows selection of choices. If you have used the Alt-c already, pressing Alt-h inside the ask-class popup will show history of previous searches.
+
+In the right window, pressing Alt-m will allow selection of methods from a popup. Space and ENTER select, use j/k/gg/G for navigation, or 'f' following by a char to go to the first or next method starting with that char. e.g. pressing 'fm' jumps to 'match' for String.
 
 Search through the current window using "/". You may use "Alt-h" to access history (previous searches).
 
