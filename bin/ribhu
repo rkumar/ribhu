@@ -257,7 +257,7 @@ if true
         popup_history
       end
 
-      header = app_header "0.0.2", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
+      header = app_header "0.0.4", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
       # this is the old style of printing something directly on the window.
       # The new style is to use a header
       #@form.window.printstring 0, 30, "ri documentation browser", $normalcolor, BOLD
@@ -265,9 +265,6 @@ if true
 
       # this is the old style of using a label at the screen bottom, you can use the status_line
 
-      v = "Q quit, F1 Help, ? Bindings,  f<char>, /,  Alt-c, ENTER on Class or Method"
-      #var = RubyCurses::Label.new @form, { :text => v, :row => FFI::NCurses.LINES-2, 
-        #:col => fc, :display_length => 100}
       $message = Variable.new
       $message.value = "Message Comes Here"
       @status_line = status_line :row => Ncurses.LINES-1
@@ -314,7 +311,7 @@ if true
       end
 
       tv = RubyCurses::TextView.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
-        :name => "tv", :title => "Press Enter on method"
+        :name => "tv", :title => "Press Enter on Class"
       tv.set_content ["Press Enter on list to view ri information in this area.", 
         "Press ENTER on method name to see details"]
       require 'rbcurse/core/include/multibuffer'
