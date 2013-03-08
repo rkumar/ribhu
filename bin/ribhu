@@ -87,17 +87,40 @@ def my_help_text
     eos
 end
 
+def convert_man_to_ansi file
+  lines = file.split "\n"
+  l = nil
+  lines.each_with_index do |line, ix|
+    # convert underlined words to yellow or one color, these are usually params
+    line.gsub!(/((_[^ ])+)/,'[4;33m\1[0m')
+    line.gsub!(/_/,'')
+    # convert bold words to red or one color, these are usually headers and other words
+    l= line.gsub(/(([^ ][^ ])+)/,'[1;31m\1[0m').gsub(/[^ ]/,'').gsub(//,'')
+    lines[ix] = l
+  end
+  lines
+end
 ##
 #  display the ridoc for given word (class or method or part)
 def display_text word
   w = @form.by_name["tv"]; 
-  lines = `ri -f rdoc #{word}`.split("\n")
+  lines = get_data word
+  #file = `ri -f bs #{word}`
+  #lines = convert_man_to_ansi file
   return if lines.nil? || lines.size == 0
   # ansi can have overflow
-  #w.add_content(lines, :content_type => :ansi, :title => word)
+  w.add_content(lines, :content_type => :ansi, :title => word)
   $visited << word unless $visited.index(word)
-  w.add_content(lines, :title => word)
+  #w.add_content(lines, :title => word)
   w.buffer_last
+end
+## retrieve data in ansi format.
+#  NOTE that ri returns <t>CLEAR</tt> without the 0. So rbcurse-core does not catch that
+#  it expects a zero there. So i've replaced [[m with [[0m.
+#  @param String class or method name to fetch ri info for
+#  @ returns Array of lines, containing ansi format data
+def get_data str
+  lines = `ri -f ansi #{str} 2>&1`.gsub('[m','[0m').split("\n")
 end
 
 ## 
@@ -107,7 +130,8 @@ def ask_classes
   format="rdoc"
   str = get_string_with_history("Enter a class name: ")
   if str && str != ""
-    lines = `ri -f #{format} #{str}`.split("\n")
+    #lines = `ri -f #{format} #{str}`.split("\n")
+    lines = get_data str
     if lines.size == 0
       alert "Nothing came through for #{str}"
       ## Nothing returned, lets see if we can match something from the class list
@@ -118,7 +142,8 @@ def ask_classes
         ix = popuplist(values)
         if ix
           str = values[ix]
-          lines = `ri -f #{format} #{str}`.split("\n")
+          #lines = `ri -f #{format} #{str}`.split("\n")
+          lines = get_data str
         end
       else
         alert "Nothing came through for #{str}"
@@ -131,13 +156,14 @@ def ask_classes
         ix = popuplist(lines)
         if ix
           str = lines[ix]
-          lines = `ri -f #{format} #{str}`.split("\n")
+          #lines = `ri -f #{format} #{str}`.split("\n")
+          lines = get_data str
         end
     end
     return if lines.size == 0
     w = @form.by_name["tv"]; 
-    #w.add_content(lines, :content_type => :ansi, :title => str)
-    w.add_content(lines, :title => str)
+    w.add_content(lines, :content_type => :ansi, :title => str)
+    #w.add_content(lines, :title => str)
     w.buffer_last
     set_focus_on str
   end
@@ -178,7 +204,8 @@ end
 def try_ri arr
   _text = nil
   arr.each do |w|
-    _text = `ri -f rdoc #{w} 2>&1`.split("\n")
+    #_text = `ri -f rdoc #{w} 2>&1`.split("\n")
+    _text = get_data w
     if _text.first.index("Nothing known about")
     else
       break
@@ -257,7 +284,7 @@ if true
         popup_history
       end
 
-      header = app_header "0.0.4", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
+      header = app_header "0.0.5", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
       # this is the old style of printing something directly on the window.
       # The new style is to use a header
       #@form.window.printstring 0, 30, "ri documentation browser", $normalcolor, BOLD
@@ -342,12 +369,13 @@ if true
             if tt.index("::")
               ix = tt.index("::")
               tt = tt[0,ix]
-              _text = `ri -f rdoc #{tt}::#{w} 2>&1`.split("\n")
+              #_text = `ri -f ansi #{tt}::#{w} 2>&1`.gsub('[m','[0m').split("\n")
+              _text = get_data "#{tt}::#{w}"
             end
           end
           if _text && _text.size != 0
-            #view(_text, :content_type => :ansi)
-            view(_text)
+            view(_text, :content_type => :ansi)
+            #view(_text)
           end
         end
       }
