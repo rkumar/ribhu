@@ -382,9 +382,11 @@ if true
       tv.bind_key(?\M-m, "Select methods") {
         kl = tv.title.strip
         lines = tv.text
-        ix = lines.index("Instance methods:")
+        # 2013-03-21 - 19:09 Fixed, had stopped working after change to ansi format
+        ix = lines.grep(/Instance methods:/)
+        ix = lines.index(ix[0]) if ix
         unless ix
-          alert "No instance methods found"
+          alert "No instance methods found #{ix}"
         end
         if ix
           values = lines[ix+2..-1]
