@@ -29,6 +29,9 @@ between previous and next pages viewed.
 
 Please get back to me if there are cases where it's unhelpful in finding the ridocs.
 
+2013-03-21 - 19:10 : Fixed bug: display of Instance methods on Alt-m had stopped working after
+changing format to ANSI.
+
 ## Installation
 
     gem install ribhu
