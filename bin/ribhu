@@ -284,7 +284,7 @@ if true
         popup_history
       end
 
-      header = app_header "0.0.5", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
+      header = app_header "0.0.6", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
       # this is the old style of printing something directly on the window.
       # The new style is to use a header
       #@form.window.printstring 0, 30, "ri documentation browser", $normalcolor, BOLD
@@ -381,12 +381,17 @@ if true
       }
       tv.bind_key(?\M-m, "Select methods") {
         kl = tv.title.strip
-        lines = tv.text
+        if kl.index "."
+          kl = kl.split(".")[0]
+        end
+        # 2013-03-21 - 19:50 since the display may be of a selected method
+        # so we requery the methods each time. Can we go to old position somehow ?
+        lines = `ri -f rdoc #{kl} 2>&1`.split("\n")
         # 2013-03-21 - 19:09 Fixed, had stopped working after change to ansi format
-        ix = lines.grep(/Instance methods:/)
-        ix = lines.index(ix[0]) if ix
+        #ix = lines.grep(/Instance methods:/)
+        ix = lines.index("= Instance methods:")
         unless ix
-          alert "No instance methods found #{ix}"
+          alert "No instance methods found for #{kl}"
         end
         if ix
           values = lines[ix+2..-1]
