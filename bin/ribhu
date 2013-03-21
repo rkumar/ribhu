@@ -382,7 +382,7 @@ if true
       tv.bind_key(?\M-m, "Select methods") {
         kl = tv.title.strip
         lines = tv.text
-        ix = lines.index("= Instance methods:")
+        ix = lines.index("Instance methods:")
         unless ix
           alert "No instance methods found"
         end
