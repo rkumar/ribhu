@@ -26,6 +26,7 @@ require 'rbcurse'
 require 'rbcurse/core/widgets/rlist'
 require 'rbcurse/core/widgets/rtextview'
 require 'rbcurse/core/include/vieditable'
+require 'shellwords'
 
 class RubyCurses::List
   # vieditable includes listeditable which
@@ -384,6 +385,7 @@ if true
         if kl.index "."
           kl = kl.split(".")[0]
         end
+
         # 2013-03-21 - 19:50 since the display may be of a selected method
         # so we requery the methods each time. Can we go to old position somehow ?
         lines = `ri -f rdoc #{kl} 2>&1`.split("\n")
@@ -400,6 +402,7 @@ if true
           ix = popuplist(values, :title => " Methods ", :bgcolor => :blue, :color => :white)
           if ix
             meth = values[ix].strip
+            meth = Shellwords.escape(meth)
             display_text "#{kl}.#{meth}"
           end
         end
