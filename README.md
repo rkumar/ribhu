@@ -30,7 +30,8 @@ between previous and next pages viewed.
 Please get back to me if there are cases where it's unhelpful in finding the ridocs.
 
 2013-03-21 - 19:10 : Fixed bug: display of Instance methods on Alt-m had stopped working after
-changing format to ANSI.
+changing format to ANSI. You may now press Alt-m even when you are on a method since we requery
+methods based on class-name and do not look up page content
 
 ## Installation
 
