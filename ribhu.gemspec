@@ -5,7 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "ribhu"
-  spec.version       = "0.0.6"
+  spec.version       = "0.0.7"
   spec.authors       = ["Rahul Kumar"]
   spec.email         = ["sentinel1879@gmail.com"]
   spec.description   = %q{ri documentation browser using ncurses}
@@ -20,5 +20,5 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
-  spec.add_dependency "rbcurse-core"
+  spec.add_dependency "rbcurse-core", ">= 0.0.11"
 end
