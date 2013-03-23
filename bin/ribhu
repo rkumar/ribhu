@@ -17,17 +17,21 @@
 # as manages keys. It also takes care of logger and includes major stuff.
 #
 #
-#  TODO: what about other docs such as rbcurse, highline and others
-#  If search fails try ::str
-#  Also when ENTER if class has a :: then try adding it straight to that module RubyCurses::Button
-#   and not RubyC::Link.Button -- keep trying options till we get something
+#  TODO: 
+# allow Alt-m from left list
+# when pressing enter on left list move focus to right
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/core/widgets/rlist'
 require 'rbcurse/core/widgets/rtextview'
 require 'rbcurse/core/include/vieditable'
 require 'shellwords'
+# need recent rbcurse for this 0.0.11 or higher
+require 'rbcurse/core/widgets/textpad'
+require 'ribhu'
 
+
+# why the f are we putting in vieditable here, this is not a demo.
 class RubyCurses::List
   # vieditable includes listeditable which
   # does bring in some functions which can crash program like x and X TODO
@@ -180,9 +184,11 @@ def set_focus_on str
 end
 
 ## user has pressed bokmark char, now get the mark A-Z
-def ask_bookmark
-  ch = @window.getchar
-  ch = ch.chr.upcase
+def ask_bookmark ch=nil
+  unless ch
+    ch = @window.getchar
+    ch = ch.chr.upcase
+  end
   str = $bookmarks[ch.to_sym]
   if str
     display_text str
@@ -243,7 +249,8 @@ if true
   begin
     # Initialize curses
     VER::start_ncurses  # this is initializing colors via ColorMap.setup
-    logfilename = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
+    path = File.join(ENV["LOGDIR"] || "./" ,"rbc13.log")
+    logfilename   = File.open(path, File::WRONLY|File::TRUNC|File::CREAT) 
     $log = Logger.new(logfilename)
     $log.level = Logger::DEBUG
 
@@ -266,6 +273,7 @@ if true
 
 
     @window = VER::Window.root_window
+    $window = @window # i need this for get_char, YUCK
     $catch_alt_digits = true; # emacs like alt-1..9 numeric arguments
     install_help_text my_help_text
     # Initialize few color pairs 
@@ -284,29 +292,33 @@ if true
       @form.bind_key(?\M-d, 'View history') do
         popup_history
       end
+      @form.bind_key(?\M-b, 'View bookmarks') do
+        # Display bookmarks and allow user to select one
+        list = []
+        $bookmarks.each_pair { |k, v| list << "   #[fg=yellow, bold] #{k} #[/end]    #[fg=cyan] #{v} #[/end]" }
+        ch = padpopup list, :title => "View Bookmarks"
+        ask_bookmark ch.upcase
+      end
 
-      header = app_header "0.0.6", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
-      # this is the old style of printing something directly on the window.
-      # The new style is to use a header
-      #@form.window.printstring 0, 30, "ri documentation browser", $normalcolor, BOLD
-      r = 1; fc = 1;
+      header = app_header "0.0.7", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
 
-      # this is the old style of using a label at the screen bottom, you can use the status_line
+
 
       $message = Variable.new
-      $message.value = "Message Comes Here"
+      $message.value = "M-b Bookmarks"
       @status_line = status_line :row => Ncurses.LINES-1
       @status_line.command {
-        "F1 Help | Q Quit | ? Keys | M-c Classes | M-d History | %20s" % [$message.value]
+        "F1 Help | Q Quit | ? Keys | M-c Ask | M-d History | M-m Methods | %20s" % [$message.value]
       }
 
       h = FFI::NCurses.LINES-2
       mylist = `ri -l `.split("\n")
       w = 25
+      r = 1
 
       listb = List.new @form, :name   => "mylist" ,
         :row  => r ,
-        :col  => 1 ,
+        :col  => 0 ,
         :width => w,
         :height => h,
         :list => mylist,
@@ -320,8 +332,8 @@ if true
       include Io
       listb.bind_key(32) {|l| l.scroll_forward };
       listb.bind(:PRESS) { 
-        display_text listb.text
         ## select class and display riinfo for class
+        display_text listb.text
       }
       listb.bind_key(?m) { 
         str = listb.text
@@ -338,7 +350,7 @@ if true
         ask_bookmark
       end
 
-      tv = RubyCurses::TextView.new @form, :row => r, :col => w+1, :height => h, :width => FFI::NCurses.COLS-w-1,
+      tv = RubyCurses::TextView.new @form, :row => r, :col => w+0, :height => h, :width => FFI::NCurses.COLS-w-0,
         :name => "tv", :title => "Press Enter on Class"
       tv.set_content ["Press Enter on list to view ri information in this area.", 
         "Press ENTER on method name to see details"]
@@ -380,7 +392,8 @@ if true
           end
         end
       }
-      tv.bind_key(?\M-m, "Select methods") {
+      @form.bind_key(?\M-m, "Select methods") {
+        tv = @form.by_name["tv"]; 
         kl = tv.title.strip
         if kl.index "."
           kl = kl.split(".")[0]
@@ -399,9 +412,19 @@ if true
           values = lines[ix+2..-1]
           values = values.collect { |x| x.strip }
           #ix = popuplist(values)
-          ix = popuplist(values, :title => " Methods ", :bgcolor => :blue, :color => :white)
-          if ix
-            meth = values[ix].strip
+          #ix = popuplist(values, :title => " Methods ", :bgcolor => :blue, :color => :white)
+          # the problem is when the list is longer than indexing values
+          # since we are not doing pagin in this small popup.
+          #
+          # maybe whenever we scroll or page, redo the numbering from a, and keep sta
+          #meth = Ribhu::indexed_list("Methods", values)
+          meth = Ribhu::ri_full_indexed_list(values, :title => "Methods")
+          if meth
+            meth = meth.strip
+          #if ix
+            #meth = values[ix].strip
+            # 2013-03-23 - 00:33 shell escape required for methods like << & [] etc else error
+            # from shell which messes screen.
             meth = Shellwords.escape(meth)
             display_text "#{kl}.#{meth}"
           end
