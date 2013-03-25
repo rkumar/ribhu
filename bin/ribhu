@@ -18,26 +18,18 @@
 #
 #
 #  TODO: 
-# allow Alt-m from left list
 # when pressing enter on left list move focus to right
 require 'logger'
 require 'rbcurse'
 require 'rbcurse/core/widgets/rlist'
 require 'rbcurse/core/widgets/rtextview'
-require 'rbcurse/core/include/vieditable'
+#require 'rbcurse/core/include/vieditable'
 require 'shellwords'
 # need recent rbcurse for this 0.0.11 or higher
 require 'rbcurse/core/widgets/textpad'
 require 'ribhu'
 
 
-# why the f are we putting in vieditable here, this is not a demo.
-class RubyCurses::List
-  # vieditable includes listeditable which
-  # does bring in some functions which can crash program like x and X TODO
-  # also, f overrides list f mapping. TODO
-  include ViEditable
-end
 def my_help_text
     <<-eos
 
@@ -58,13 +50,17 @@ def my_help_text
     You may also press Alt-n and Alt-p to cycle through next and previously
     viewed pages.
 
-    Press Alt-C to enter class or method name and see details. If there is 
+    Press Alt-c to enter class or method name and see details. If there is 
     no data returned, or options returned you may have to select from a list.
     e.g. entering 'flatten' may return a list of choices to select from.
     Entering 'Str' returns nothing from ri, so you have to select from classes
     starting with 'Str'.
 
-    Press Alt-D to get a popup of visited classes, from which you may select.
+    Press Alt-d to get a popup of visited classes, from which you may select.
+
+    Press Alt-b to get a popup of bookmarks, from which you may select.
+
+    Press Alt-m to get a popup of methods for current class, from which you may select.
 
     '?' displays all key binding for current object. 'Q' and 'C-q' quit.
     In any popups, try 'C-q' to quit.
@@ -115,6 +111,11 @@ def display_text word
   return if lines.nil? || lines.size == 0
   # ansi can have overflow
   w.add_content(lines, :content_type => :ansi, :title => word)
+
+  # Since i am trying without border, so need to put class on top right
+  header = @form.by_name["header"]; 
+  header.text_right(word)
+
   $visited << word unless $visited.index(word)
   #w.add_content(lines, :title => word)
   w.buffer_last
@@ -273,6 +274,11 @@ if true
 
 
     @window = VER::Window.root_window
+    colors = Ncurses.COLORS
+    back = :black
+    lineback = :blue
+    back = 234 if colors >= 256
+    lineback = 236 if colors >= 256
     $window = @window # i need this for get_char, YUCK
     $catch_alt_digits = true; # emacs like alt-1..9 numeric arguments
     install_help_text my_help_text
@@ -300,15 +306,17 @@ if true
         ask_bookmark ch.upcase
       end
 
-      header = app_header "0.0.7", :text_center => "ri Documentation Browser", :text_right =>"" #, :color => :black, :bgcolor => :white #, :attr => :bold 
+      header = app_header "0.0.8", :text_center => "ri Documentation Browser", :text_right =>"" , :name => "header" , :color => :white, :bgcolor => lineback , :attr => :bold 
 
 
 
+        #"#[bg=236, fg=black]#[fg=yellow, bold]F1#[/end] Help | #[fg=yellow, bold]?#[/end] Keys | #[fg=yellow, bold]M-c#[/end] Ask | #[fg=yellow, bold]M-d#[/end] History | #[fg=yellow, bold]M-m#[/end] Methods | #[fg=yellow, bold]M-b#[/end] Bookmarks | Q Quit | %20s" % [$message.value]
+        _col = "#[fg=yellow]"
       $message = Variable.new
-      $message.value = "M-b Bookmarks"
-      @status_line = status_line :row => Ncurses.LINES-1
+      $message.value = ""
+      @status_line = status_line :row => Ncurses.LINES-1 #, :bgcolor => :red, :color => :yellow
       @status_line.command {
-        "F1 Help | Q Quit | ? Keys | M-c Ask | M-d History | M-m Methods | %20s" % [$message.value]
+        "#[bg=236, fg=black]#{_col}F1#[/end] Help | #{_col}?#[/end] Keys | #{_col}M-c#[/end] Ask | #{_col}M-d#[/end] History | #{_col}M-m#[/end] Methods | #{_col}M-b#[/end] Bookmarks | Q Quit | %20s" % [$message.value]
       }
 
       h = FFI::NCurses.LINES-2
@@ -324,12 +332,15 @@ if true
         :list => mylist,
         :selection_mode => :SINGLE,
         :show_selector => true,
+        :suppress_borders => true,
+        :bgcolor => back,
+        :color => :white,
         :title => " Ruby Classes "
       #title_attrib 'reverse'
       listb.one_key_selection = false # this allows us to map keys to methods
       #listb.vieditable_init_listbox
       # what for is Io here
-      include Io
+      #include Io
       listb.bind_key(32) {|l| l.scroll_forward };
       listb.bind(:PRESS) { 
         ## select class and display riinfo for class
@@ -343,15 +354,13 @@ if true
         end
         ## select class and display riinfo for class
       }
-      #listb.unbind_key([?', ?'])
-      #listb.unbind_key(["'","'"])
-      #listb.unbind_key("'")
+      # since keys are added at handle_key, really late, therefore unbind is of no use.
       listb.bind_key(?', 'select bookmark') do
         ask_bookmark
       end
 
       tv = RubyCurses::TextView.new @form, :row => r, :col => w+0, :height => h, :width => FFI::NCurses.COLS-w-0,
-        :name => "tv", :title => "Press Enter on Class"
+        :name => "tv", :title => "Press Enter on Class", :suppress_borders => true
       tv.set_content ["Press Enter on list to view ri information in this area.", 
         "Press ENTER on method name to see details"]
       require 'rbcurse/core/include/multibuffer'
@@ -367,22 +376,15 @@ if true
         w = ev.word_under_cursor.strip
         # check that user did not hit enter on empty area
         if w != ""
-          #alert "wuc:#{w}:cp=#{ev.curpos},"
-          #if w.index("::")
-          #str=w
-          #else
           str = "#{tv.title}.#{w}"
           _text = try_ri(["#{str}", w])
-          #end
           tt = tv.title
-          #_text = `ri -f rdoc #{str} 2>&1` 
-          #_text = _text.split("\n")
           if _text.first.index("Nothing known about")
-            $log.debug "XXXX got #{_text}"
+          
             if tt.index("::")
               ix = tt.index("::")
               tt = tt[0,ix]
-              #_text = `ri -f ansi #{tt}::#{w} 2>&1`.gsub('[m','[0m').split("\n")
+         
               _text = get_data "#{tt}::#{w}"
             end
           end
@@ -421,8 +423,6 @@ if true
           meth = Ribhu::ri_full_indexed_list(values, :title => "Methods")
           if meth
             meth = meth.strip
-          #if ix
-            #meth = values[ix].strip
             # 2013-03-23 - 00:33 shell escape required for methods like << & [] etc else error
             # from shell which messes screen.
             meth = Shellwords.escape(meth)
