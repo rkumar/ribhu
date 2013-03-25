@@ -5,7 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "ribhu"
-  spec.version       = "0.0.7"
+  spec.version       = "0.0.8"
   spec.authors       = ["Rahul Kumar"]
   spec.email         = ["sentinel1879@gmail.com"]
   spec.description   = %q{ri documentation browser using ncurses}
