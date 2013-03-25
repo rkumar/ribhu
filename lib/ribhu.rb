@@ -359,6 +359,7 @@ module Ribhu
     #end
     ## use keycode_tos from Utils.
   end
+  ##
   # prints a prompt at bottom of screen, takes a character and returns textual representation
   # of character (as per get_char) and not the int that window.getchar returns.
   # It uses a window, so underlying text is not touched.
@@ -379,17 +380,23 @@ module Ribhu
     return chr
   end
 
+  ##
   # identical to get_string but does not show as a popup with buttons, just ENTER
   # This is required if there are multiple inputs required and having several get_strings
   # one after the other seems really odd due to multiple popups
   # Unlike, get_string this does not return a nil if C-c pressed. Either returns a string if 
   # ENTER pressed or a blank if C-c or Double Escape. So only blank to be checked
+  # TODO up arrow can access history
   def get_line text, config={}
     begin
       w = one_line_window
       form = RubyCurses::Form.new w
+      config[:label] = text
+      config[:row] = 0
+      config[:col] = 1
 
-      f = Field.new form, :label => text, :row => 0, :col => 1
+      #f = Field.new form, :label => text, :row => 0, :col => 1
+      f = Field.new form, config
       form.repaint
       w.wrefresh
       while((ch = w.getchar()) != FFI::NCurses::KEY_F10 )
@@ -416,7 +423,14 @@ module Ribhu
     end
     return f.text
   end
-  def pad_list list
+  def ask prompt, dt=nil
+    return get_line prompt
+  end
+  ##
+  # justify or pad list with spaces so we can columnate, uses longest item to determine size
+  # @param list to pad
+  # @return list padded with spaces
+  def padup_list list
     longest = list.max_by(&:length)
     llen = longest.size
     alist = list.collect { |x|
@@ -482,7 +496,7 @@ module Ribhu
       viewport = view[sta, pagesize]
       fin = sta + viewport.size
       #alist = columnate_with_indexing viewport, grows
-      viewport = pad_list viewport
+      viewport = padup_list viewport
       viewport = index_this_list viewport
       alist = columnate viewport, grows
       lb.formatted_text(alist, :tmux)
@@ -558,6 +572,12 @@ module Ribhu
   ensure
     window.destroy 
   end
+  ##
+  # calculate start of display based on current position
+  # This is the value 'sta' should have (starting index)
+  # @param int pagesize : number of items on one page
+  # @param int cur : current cursor position
+  # @return int : position where 'sta' should be
   def calc_sta pagesize, cur
     pages = (cur * 1.001 / pagesize).ceil
     pages -= 1 if pages > 0
