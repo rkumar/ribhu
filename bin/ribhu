@@ -223,11 +223,13 @@ def try_ri arr
 end
 def popup_history
   return if $visited.size == 0
-  ix = popuplist($visited, :title => " History ", :bgcolor => :blue, :color => :white)
+  ix = popuplist($visited, :title => " History ", :bgcolor => :black, :color => :white, :row => 1, :col => 1)
   if ix
     display_text $visited[ix]
   end
 end
+#
+# History is accessible using Alt-h while in field, press enter on any row in the popup
 def get_string_with_history prompt
   $shell_history ||= []
   cmd = get_string(prompt, :maxlen => 50) do |f|
@@ -239,6 +241,20 @@ def get_string_with_history prompt
     $shell_history.push(cmd) unless $shell_history.include? cmd
   end
   return cmd
+end
+# switches location of 2 windows 
+# 
+def switch_windows
+  tv = @form.by_name["tv"]
+  list = @form.by_name["mylist"]
+  if tv.col > 0
+    tv.col = 0
+    tmp = tv.width
+    list.col = tmp + 1
+  else
+    list.col = 0
+    tv.col = list.width + 1
+  end
 end
 
 
@@ -264,6 +280,9 @@ if true
       :H => "Hash",
       :I => "IO",
       :K => "Kernel",
+      :M => "Module",
+      :O => "OptionParser",
+      :P => "Proc",
       :S => "String"
     }
     config = File.expand_path("~/.ribhu.conf")
@@ -292,9 +311,11 @@ if true
       @form.bind_key(?\M-c, 'select class') do
         ask_classes
       end
+      @form.bind_key(FFI::NCurses::KEY_F5, 'switch_windows'){ switch_windows }
       @form.bind_key(?', 'select bookmark') do
         ask_bookmark
       end
+      # Alt-h is taken by scrolling in list and textareas
       @form.bind_key(?\M-d, 'View history') do
         popup_history
       end
@@ -302,7 +323,7 @@ if true
         # Display bookmarks and allow user to select one
         list = []
         $bookmarks.each_pair { |k, v| list << "   #[fg=yellow, bold] #{k} #[/end]    #[fg=cyan] #{v} #[/end]" }
-        ch = padpopup list, :title => "View Bookmarks"
+        ch = padpopup list, :title => "View Bookmarks", :row => 1, :col => 1
         ask_bookmark ch.upcase
       end
 
