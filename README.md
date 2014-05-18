@@ -10,7 +10,7 @@ fetch its details.
 You may mark classes with an upper case alphabet (vim style by pressing 'm' in the left list) and access them directly using single-quote.
 Several classes have been bookmarked such as Array, String, Hash, File. You may place more in a file named "~/.ribhu.conf" in the form:
 
-    $bookmark[:Z] = "Zlib"
+    $bookmarks[:Z] = "Zlib"
 
 A list of visited classes is also maintained and can be accessed and selected from. You may prepopulate it
 from the conf file as:
